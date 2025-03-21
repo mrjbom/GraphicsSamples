@@ -28,7 +28,11 @@ impl ApplicationHandler for App {
                 .expect("Failed to create window"),
         );
 
-        self.state = Some(State { window })
+        self.state = Some(State {
+            window: window.clone(),
+        });
+
+        window.request_redraw();
     }
 
     fn window_event(
