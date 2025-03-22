@@ -17,31 +17,34 @@ fn main() {
 
 #[derive(Default)]
 struct App {
-    state: Option<State>,
+    graphics_context: Option<GraphicsContext>,
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window = Arc::new(
-            event_loop
-                .create_window(Window::default_attributes())
-                .expect("Failed to create window"),
-        );
-
-        self.state = Some(State {
-            window: window.clone(),
-        });
-
-        window.request_redraw();
+        let graphics_context = GraphicsContext::new(event_loop);
+        let graphics_context = match graphics_context {
+            Ok(graphics_context) => graphics_context,
+            Err(err) => {
+                log::error!("Failed to create graphics context: {err:#}");
+                event_loop.exit();
+                return;
+            }
+        };
+        self.graphics_context = Some(graphics_context);
     }
 
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
-        window_id: WindowId,
+        _window_id: WindowId,
         event: WindowEvent,
     ) {
-        let state = self.state.as_mut().unwrap();
+        if self.graphics_context.is_none() {
+            return;
+        }
+        let _graphics_context = self.graphics_context.as_mut().unwrap();
+
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => {}
@@ -50,8 +53,18 @@ impl ApplicationHandler for App {
     }
 }
 
-struct State {
+struct GraphicsContext {
     window: Arc<Window>,
+}
+
+impl GraphicsContext {
+    pub fn new(event_loop: &ActiveEventLoop) -> anyhow::Result<Self> {
+        let window = Arc::new(event_loop.create_window(Window::default_attributes())?);
+
+        window.request_redraw();
+
+        Ok(GraphicsContext { window })
+    }
 }
 
 fn logger_init() {
