@@ -6,6 +6,7 @@ use wgpu::{
     SurfaceConfiguration, TextureFormat, TextureUsages,
 };
 use winit::application::ApplicationHandler;
+use winit::dpi::LogicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::{Window, WindowId};
@@ -55,9 +56,12 @@ impl ApplicationHandler for App {
         let graphics_context = self.graphics_context.as_mut().unwrap();
 
         match event {
-            WindowEvent::RedrawRequested => {}
-            WindowEvent::Resized(_new_size) => {
-                graphics_context.surface_data.configure();
+            WindowEvent::RedrawRequested => graphics_context.window.request_redraw(),
+            WindowEvent::Resized(new_size) => {
+                graphics_context
+                    .surface_data
+                    .configure(new_size.width.max(1), new_size.height.max(1));
+                graphics_context.window.request_redraw();
             }
             WindowEvent::CloseRequested => event_loop.exit(),
             _ => {}
@@ -77,6 +81,7 @@ struct GraphicsContext {
 impl GraphicsContext {
     pub fn new(event_loop: &ActiveEventLoop) -> anyhow::Result<Self> {
         let window = Arc::new(event_loop.create_window(Window::default_attributes())?);
+        window.set_min_inner_size(Some(LogicalSize::new(1, 1)));
 
         // Instance
         let instance = Instance::new(&InstanceDescriptor {
@@ -117,7 +122,10 @@ impl GraphicsContext {
             device.clone(),
             TextureUsages::RENDER_ATTACHMENT,
         );
-        surface_data.configure();
+        surface_data.configure(
+            window.inner_size().width.max(1),
+            window.inner_size().height.max(1),
+        );
 
         window.request_redraw();
         Ok(GraphicsContext {
@@ -197,9 +205,9 @@ impl SurfaceData {
         }
     }
 
-    pub fn configure(&self) {
-        self.surface_configuration.borrow_mut().width = self.window.inner_size().width;
-        self.surface_configuration.borrow_mut().height = self.window.inner_size().height;
+    pub fn configure(&self, width: u32, height: u32) {
+        self.surface_configuration.borrow_mut().width = width;
+        self.surface_configuration.borrow_mut().height = height;
 
         self.surface
             .configure(&self.device, &self.surface_configuration.borrow());
