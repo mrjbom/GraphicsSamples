@@ -115,7 +115,7 @@ impl GraphicsContext {
         )?;
         let device = Arc::new(device);
 
-        let surface_data = SurfaceData::new(
+        let mut surface_data = SurfaceData::new(
             window.clone(),
             surface,
             &adapter,
@@ -145,7 +145,7 @@ struct SurfaceData {
     device: Arc<Device>,
     capabilities: SurfaceCapabilities,
     // Configuration data
-    surface_configuration: RefCell<SurfaceConfiguration>,
+    surface_configuration: SurfaceConfiguration,
 }
 
 impl SurfaceData {
@@ -201,15 +201,15 @@ impl SurfaceData {
             surface,
             device,
             capabilities,
-            surface_configuration: RefCell::new(surface_configuration),
+            surface_configuration,
         }
     }
 
-    pub fn configure(&self, width: u32, height: u32) {
-        self.surface_configuration.borrow_mut().width = width;
-        self.surface_configuration.borrow_mut().height = height;
+    pub fn configure(&mut self, width: u32, height: u32) {
+        self.surface_configuration.width = width;
+        self.surface_configuration.height = height;
 
         self.surface
-            .configure(&self.device, &self.surface_configuration.borrow());
+            .configure(&self.device, &self.surface_configuration);
     }
 }
