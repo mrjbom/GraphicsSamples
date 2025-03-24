@@ -4,17 +4,15 @@ use std::sync::Arc;
 use wgpu::naga::ShaderStage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    Adapter, Backends, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Buffer,
-    BufferAddress, BufferBindingType, BufferUsages, Color, ColorTargetState, ColorWrites,
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Face, Features,
-    FragmentState, FrontFace, Instance, InstanceDescriptor, Limits, LoadOp, MemoryHints,
-    Operations, PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
-    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
-    RequestAdapterOptions, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages,
-    StoreOp, Surface, SurfaceCapabilities, SurfaceConfiguration, SurfaceError, SurfaceTexture,
-    Texture, TextureAspect, TextureUsages, TextureView, TextureViewDescriptor,
-    TextureViewDimension, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState,
-    VertexStepMode,
+    Adapter, Backends, Buffer, BufferAddress, BufferUsages, Color, ColorTargetState, ColorWrites,
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, FragmentState,
+    FrontFace, Instance, InstanceDescriptor, LoadOp, MemoryHints, Operations, PowerPreference,
+    PresentMode, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
+    ShaderModule, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface, SurfaceCapabilities,
+    SurfaceConfiguration, SurfaceError, SurfaceTexture, TextureAspect, TextureUsages, TextureView,
+    TextureViewDescriptor, TextureViewDimension, VertexAttribute, VertexBufferLayout, VertexFormat,
+    VertexState, VertexStepMode,
 };
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
@@ -129,6 +127,7 @@ impl ApplicationHandler for App {
                 let graphics_context = self.graphics_context.as_ref().unwrap();
                 graphics_context.window.request_redraw();
             }
+
             WindowEvent::Resized(new_size) => {
                 let graphics_context = self.graphics_context.as_mut().unwrap();
                 graphics_context
