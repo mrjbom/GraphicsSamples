@@ -6,14 +6,15 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingType, Buffer,
     BufferAddress, BufferBindingType, BufferUsages, Color, ColorTargetState, ColorWrites,
-    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Face, FragmentState,
-    FrontFace, Instance, InstanceDescriptor, LoadOp, Operations, PowerPreference, PresentMode,
-    PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions, ShaderModule,
-    ShaderModuleDescriptor, ShaderSource, ShaderStages, StoreOp, Surface, SurfaceCapabilities,
-    SurfaceConfiguration, SurfaceError, SurfaceTexture, Texture, TextureAspect, TextureUsages,
-    TextureView, TextureViewDescriptor, TextureViewDimension, VertexAttribute, VertexBufferLayout,
-    VertexFormat, VertexState, VertexStepMode,
+    CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, Face, Features,
+    FragmentState, FrontFace, Instance, InstanceDescriptor, Limits, LoadOp, MemoryHints,
+    Operations, PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    RequestAdapterOptions, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages,
+    StoreOp, Surface, SurfaceCapabilities, SurfaceConfiguration, SurfaceError, SurfaceTexture,
+    Texture, TextureAspect, TextureUsages, TextureView, TextureViewDescriptor,
+    TextureViewDimension, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState,
+    VertexStepMode,
 };
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
@@ -126,6 +127,7 @@ impl ApplicationHandler for App {
 
                 self.render(&device, &queue, surface_texture, surface_texture_view);
                 let graphics_context = self.graphics_context.as_ref().unwrap();
+                graphics_context.window.request_redraw();
             }
             WindowEvent::Resized(new_size) => {
                 let graphics_context = self.graphics_context.as_mut().unwrap();
@@ -181,9 +183,14 @@ impl GraphicsContext {
         );
 
         // Device and Queue
-        let (device, queue) = futures::executor::block_on(
-            adapter.request_device(&DeviceDescriptor::default(), None),
-        )?;
+        let (device, queue) = futures::executor::block_on(adapter.request_device(
+            &DeviceDescriptor {
+                label: None,
+                memory_hints: MemoryHints::MemoryUsage,
+                ..Default::default()
+            },
+            None,
+        ))?;
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
@@ -235,11 +242,7 @@ impl SurfaceData {
         let format = capabilities.formats[0];
 
         let present_mode = 'present_mode: {
-            let preferences = vec![
-                PresentMode::Mailbox,
-                PresentMode::FifoRelaxed,
-                PresentMode::Fifo,
-            ];
+            let preferences = vec![PresentMode::FifoRelaxed, PresentMode::Fifo];
             for preferred_present_mode in preferences.iter() {
                 if capabilities.present_modes.contains(preferred_present_mode) {
                     break 'present_mode *preferred_present_mode;
