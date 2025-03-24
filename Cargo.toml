@@ -5,8 +5,9 @@ edition = "2024"
 
 [dependencies]
 winit = "0.30.9"
-wgpu = "24.0.3"
+wgpu = { version = "24.0.3", features = ["glsl"] }
 anyhow = "1.0.97"
 env_logger = "0.11.7"
 log = "0.4.26"
 futures = "0.3.31"
+bytemuck = "1.22.0"
