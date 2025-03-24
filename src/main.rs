@@ -126,7 +126,6 @@ impl ApplicationHandler for App {
 
                 self.render(&device, &queue, surface_texture, surface_texture_view);
                 let graphics_context = self.graphics_context.as_ref().unwrap();
-                graphics_context.window.request_redraw()
             }
             WindowEvent::Resized(new_size) => {
                 let graphics_context = self.graphics_context.as_mut().unwrap();
