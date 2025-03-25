@@ -6,13 +6,13 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, Buffer, BufferAddress, BufferUsages, Color, ColorTargetState, ColorWrites,
     CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, FragmentState,
-    FrontFace, Instance, InstanceDescriptor, LoadOp, MemoryHints, Operations, PowerPreference,
-    PresentMode, PrimitiveState, PrimitiveTopology, Queue, RenderPassColorAttachment,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, RequestAdapterOptions,
-    ShaderModule, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface, SurfaceCapabilities,
-    SurfaceConfiguration, SurfaceError, SurfaceTexture, TextureAspect, TextureUsages, TextureView,
-    TextureViewDescriptor, TextureViewDimension, VertexAttribute, VertexBufferLayout, VertexFormat,
-    VertexState, VertexStepMode,
+    FrontFace, Instance, InstanceDescriptor, LoadOp, Maintain, MaintainBase, MemoryHints,
+    Operations, PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    RequestAdapterOptions, ShaderModule, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface,
+    SurfaceCapabilities, SurfaceConfiguration, SurfaceError, SurfaceTexture, TextureAspect,
+    TextureUsages, TextureView, TextureViewDescriptor, TextureViewDimension, VertexAttribute,
+    VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 use winit::application::ApplicationHandler;
 use winit::dpi::LogicalSize;
@@ -69,7 +69,8 @@ impl App {
             render_pass.draw(0..3, 0..1);
         }
         let command_buffer = command_encoder.finish();
-        queue.submit([command_buffer]);
+        let submission_index = queue.submit([command_buffer]);
+        device.poll(Maintain::WaitForSubmissionIndex(submission_index));
         graphics_context.window.pre_present_notify();
         surface_texture.present();
     }
