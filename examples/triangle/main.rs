@@ -54,6 +54,7 @@ impl SampleTrait for SampleContext {
                     defines: Default::default(),
                 },
             });
+
         let fragment_shader =
             graphics_context
                 .device

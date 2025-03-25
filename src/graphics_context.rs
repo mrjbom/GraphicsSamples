@@ -44,7 +44,7 @@ impl GraphicsContext {
             anyhow::bail!("Failed to get adapter");
         }
         let adapter = adapter.unwrap();
-        log::info!(
+        println!(
             "Selected adapter: {}, {}",
             adapter.get_info().name,
             adapter.get_info().backend
