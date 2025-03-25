@@ -4,20 +4,33 @@ use crate::graphics_context::GraphicsContext;
 use wgpu::{SurfaceTexture, TextureView};
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
-use winit::event_loop::ActiveEventLoop;
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::WindowId;
 
 pub struct SampleApp<S: SampleTrait + Sized> {
+    event_loop: Option<EventLoop<()>>,
     graphics_context: Option<GraphicsContext>,
     sample_context: Option<S>,
 }
 
 impl<S: SampleTrait + Sized> SampleApp<S> {
     pub fn new() -> Self {
+        let event_loop = EventLoop::new().expect("Failed to create event loop");
+        event_loop.set_control_flow(ControlFlow::Poll);
+
         Self {
+            event_loop: Some(event_loop),
             graphics_context: None,
             sample_context: None,
         }
+    }
+
+    pub fn run(&mut self) {
+        self.event_loop
+            .take()
+            .unwrap()
+            .run_app(self)
+            .expect("Failed to run sample app");
     }
 }
 

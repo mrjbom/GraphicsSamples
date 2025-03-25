@@ -12,19 +12,13 @@ use wgpu::{
     StoreOp, SurfaceTexture, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat,
     VertexState, VertexStepMode,
 };
-use winit::event_loop::{ControlFlow, EventLoop};
 
 fn main() {
     env_logger::builder().format_timestamp(None).init();
 
-    let event_loop = EventLoop::new().expect("Failed to create event loop");
-    event_loop.set_control_flow(ControlFlow::Poll);
-
     let mut sample_app = SampleApp::<SampleContext>::new();
 
-    event_loop
-        .run_app(&mut sample_app)
-        .expect("Failed to run sample app");
+    sample_app.run();
 }
 
 struct SampleContext {
