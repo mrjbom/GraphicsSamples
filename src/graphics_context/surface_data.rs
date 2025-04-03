@@ -10,6 +10,7 @@ pub struct SurfaceData {
     window: Arc<Window>,
     surface: Surface<'static>,
     device: Arc<Device>,
+    #[allow(unused)]
     capabilities: SurfaceCapabilities,
     pub surface_configuration: SurfaceConfiguration,
     suboptimal: bool,

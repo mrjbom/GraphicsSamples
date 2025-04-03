@@ -6,8 +6,8 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, Buffer, BufferAddress, BufferUsages, Color, ColorTargetState, ColorWrites,
     CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, FragmentState,
-    FrontFace, Instance, InstanceDescriptor, LoadOp, Maintain, MaintainBase, MemoryHints,
-    Operations, PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
+    FrontFace, Instance, InstanceDescriptor, LoadOp, Maintain, MemoryHints, Operations,
+    PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
     RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
     RequestAdapterOptions, ShaderModule, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface,
     SurfaceCapabilities, SurfaceConfiguration, SurfaceError, SurfaceTexture, TextureAspect,

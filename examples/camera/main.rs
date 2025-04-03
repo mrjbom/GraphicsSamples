@@ -1,38 +1,49 @@
 use bytemuck::{Pod, Zeroable};
+use graphics_samples::camera::Camera;
 use graphics_samples::graphics_context::GraphicsContext;
 use graphics_samples::{SampleApp, SampleRequirements, SampleTrait};
+use nalgebra::Matrix4;
 use std::borrow::Cow;
 use wgpu::naga::ShaderStage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Buffer, BufferAddress, BufferUsages, Color, ColorTargetState, ColorWrites,
-    CommandEncoderDescriptor, FragmentState, FrontFace, LoadOp, Maintain, Operations,
-    PrimitiveState, PrimitiveTopology, RenderPassColorAttachment, RenderPassDescriptor,
-    RenderPipeline, RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource,
-    StoreOp, SurfaceTexture, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat,
-    VertexState, VertexStepMode,
+    CommandEncoderDescriptor, DeviceDescriptor, Features, FragmentState, FrontFace, Limits, LoadOp,
+    Maintain, Operations, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology,
+    PushConstantRange, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, StoreOp,
+    SurfaceTexture, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState,
+    VertexStepMode,
 };
 
 fn main() {
     env_logger::builder().format_timestamp(None).init();
 
     let sample_requirements = SampleRequirements {
-        ..Default::default()
+        device_descriptor: Some(DeviceDescriptor {
+            required_features: Features::PUSH_CONSTANTS,
+            required_limits: Limits {
+                max_push_constant_size: 64,
+                ..Default::default()
+            },
+            ..Default::default()
+        }),
     };
-    let mut sample_app = SampleApp::<SampleContext>::new("Triangle", sample_requirements);
+    let mut sample_app = SampleApp::<SampleContext>::new("Camera", sample_requirements);
 
     sample_app.run();
 }
 
 struct SampleContext {
-    vertex_shader: ShaderModule,
-    fragment_shader: ShaderModule,
+    camera: Camera,
     vertex_buffer: Buffer,
     render_pipeline: RenderPipeline,
 }
 
 impl SampleTrait for SampleContext {
     fn new(graphics_context: &GraphicsContext) -> anyhow::Result<Self> {
+        let camera = Camera::new([0.0, 0.0, -1.0], [0.0, 0.0, 1.0]);
+
         // Shaders
         let vertex_shader = graphics_context
             .device
@@ -45,10 +56,13 @@ impl SampleTrait for SampleContext {
 
                     layout(location = 0) in vec3 in_Position;
                     layout(location = 1) in vec4 in_Color;
+                    layout(push_constant) uniform PushConstants {
+                        mat4 mvp_matrix;
+                    } p_c;
                     out vec4 out_Color;
 
                     void main() {
-                        gl_Position = vec4(in_Position, 1.0);
+                        gl_Position = p_c.mvp_matrix * vec4(in_Position, 1.0);
                         out_Color = in_Color;
                     }
                 "#,
@@ -91,15 +105,15 @@ impl SampleTrait for SampleContext {
 
         let vertexes = vec![
             Vertex {
-                position: [0.0, 0.5, 0.0],
+                position: [0.0, 0.5, 0.25],
                 color: [1.0, 0.0, 0.0],
             },
             Vertex {
-                position: [0.5, -0.5, 0.0],
+                position: [0.5, -0.5, 0.25],
                 color: [0.0, 1.0, 0.0],
             },
             Vertex {
-                position: [-0.5, -0.5, 0.0],
+                position: [-0.5, -0.5, 0.25],
                 color: [0.0, 0.0, 1.0],
             },
         ];
@@ -117,7 +131,16 @@ impl SampleTrait for SampleContext {
                 .device
                 .create_render_pipeline(&RenderPipelineDescriptor {
                     label: None,
-                    layout: None,
+                    layout: Some(&graphics_context.device.create_pipeline_layout(
+                        &PipelineLayoutDescriptor {
+                            label: None,
+                            bind_group_layouts: &[],
+                            push_constant_ranges: &[PushConstantRange {
+                                stages: ShaderStages::VERTEX,
+                                range: 0..64,
+                            }],
+                        },
+                    )),
                     vertex: VertexState {
                         module: &vertex_shader,
                         entry_point: Some("main"),
@@ -168,8 +191,7 @@ impl SampleTrait for SampleContext {
                 });
 
         Ok(Self {
-            vertex_shader,
-            fragment_shader,
+            camera,
             vertex_buffer,
             render_pipeline,
         })
@@ -201,6 +223,27 @@ impl SampleTrait for SampleContext {
             });
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_pipeline(&self.render_pipeline);
+
+            // Camera
+            // OpenGL projection matrix
+            // Problems: Incorrect Z-axis direction
+            // Incorrect depth clip space
+            // OpenGL: [-1,1], wgpu: [0,1]
+            let projection_correction = Matrix4::new(
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.5, 0.0, 0.0, -1.0, 0.0,
+            );
+            let projection_matrix =
+                Matrix4::new_perspective(graphics_context.window_aspect(), 45.0, 0.1, 100.0);
+            let projection_matrix = projection_correction * projection_matrix;
+            let view_matrix = self.camera.calculate_view_matrix();
+            let model_matrix = Matrix4::<f32>::identity();
+            let mvp_matrix = projection_matrix * view_matrix * model_matrix;
+            render_pass.set_push_constants(
+                ShaderStages::VERTEX,
+                0,
+                bytemuck::bytes_of(&mvp_matrix),
+            );
+
             render_pass.draw(0..3, 0..1);
         }
         let command_buffer = command_encoder.finish();

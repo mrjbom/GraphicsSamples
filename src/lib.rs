@@ -1,24 +1,29 @@
+pub mod camera;
 pub mod graphics_context;
 
 use crate::graphics_context::GraphicsContext;
-use wgpu::{SurfaceTexture, TextureView};
+use wgpu::{DeviceDescriptor, SurfaceTexture, TextureView};
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::window::WindowId;
 
 pub struct SampleApp<S: SampleTrait + Sized> {
+    sample_name: &'static str,
+    sample_requirements: SampleRequirements,
     event_loop: Option<EventLoop<()>>,
     graphics_context: Option<GraphicsContext>,
     sample_context: Option<S>,
 }
 
 impl<S: SampleTrait + Sized> SampleApp<S> {
-    pub fn new() -> Self {
+    pub fn new(sample_name: &'static str, sample_requirements: SampleRequirements) -> Self {
         let event_loop = EventLoop::new().expect("Failed to create event loop");
         event_loop.set_control_flow(ControlFlow::Poll);
 
         Self {
+            sample_name,
+            sample_requirements,
             event_loop: Some(event_loop),
             graphics_context: None,
             sample_context: None,
@@ -40,7 +45,8 @@ impl<S: SampleTrait> ApplicationHandler for SampleApp<S> {
             return;
         }
 
-        let graphics_context = GraphicsContext::new(event_loop);
+        let graphics_context =
+            GraphicsContext::new(event_loop, self.sample_name, &self.sample_requirements);
         let graphics_context = match graphics_context {
             Ok(graphics_context) => graphics_context,
             Err(err) => {
@@ -109,4 +115,9 @@ pub trait SampleTrait: Sized {
         surface_texture: SurfaceTexture,
         surface_texture_view: TextureView,
     );
+}
+
+#[derive(Default)]
+pub struct SampleRequirements {
+    pub device_descriptor: Option<DeviceDescriptor<'static>>,
 }
