@@ -31,7 +31,7 @@ impl SurfaceData {
         let format = capabilities.formats[0];
 
         let present_mode = 'present_mode: {
-            let preferences = vec![PresentMode::FifoRelaxed, PresentMode::Fifo];
+            let preferences = [PresentMode::FifoRelaxed, PresentMode::Fifo];
             for preferred_present_mode in preferences.iter() {
                 if capabilities.present_modes.contains(preferred_present_mode) {
                     break 'present_mode *preferred_present_mode;

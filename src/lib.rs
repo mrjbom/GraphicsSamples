@@ -87,7 +87,7 @@ impl<S: SampleTrait> ApplicationHandler for SampleApp<S> {
                     graphics_context.surface_data.acquire();
 
                 let sample_context = self.sample_context.as_mut().unwrap();
-                sample_context.render(&graphics_context, surface_texture, surface_texture_view);
+                sample_context.render(graphics_context, surface_texture, surface_texture_view);
 
                 let graphics_context = self.graphics_context.as_ref().unwrap();
                 graphics_context.window.request_redraw();
