@@ -50,27 +50,37 @@ impl Camera {
     ) -> Self {
         let screen_size_coefficient = if let Some(current_monitor) = current_monitor {
             // Corrects standard screen size coefficient to current monitor
+            // On a large screen, the mouse moves a greater distance in pixels than on a small screen, for the same physical mouse offset.
+            // Example
+            // Small screen: 1 cm (mouse) = 20 pixels = 20 degrees (coefficient 1)
+            // Large screen: 1 cm (mouse) = 40 pixels = 20 degrees (coefficient 0.5)
             // Example
             // Standard monitor: 2560x1440
             // Standard screen size coefficient: 0.5
             // 1.
             // Current monitor: 1920x1080
-            // Difference of standard: 0.75
-            // Screen coefficient: 0.75 * 0.5 = 0.375
+            // Current to standard ratio: 0.75
+            // Screen coefficient: 0.5 * (2 - 0.75) = 0.625
             // 2.
-            // Current monitor: 1280x1024
-            // Difference of standard: 0.5
-            // Screen coefficient: 0.5 * 0.5 = 0.25
+            // Current monitor: 3200x1800
+            // Current to standard ratio: 1.25
+            // Screen coefficient: 0.5 * (2 - 1.25) = 0.375
             // 3.
-            // Current monitor: 3840x1600
-            // Difference of standard: 1.11
-            // Difference of standard: 1.11 * 0.5 = 0.555
+            // Current monitor: 5120x2880
+            // Current to standard ratio: 2.0
+            // Screen coefficient: 0.25
 
             // Calculate monitor size coefficient
             let difference_x = current_monitor.size().width as f32 / STANDARD_SCREEN_SIZE.0 as f32;
             let difference_y = current_monitor.size().height as f32 / STANDARD_SCREEN_SIZE.1 as f32;
 
-            let scale_factor = f32::min(difference_x, difference_y);
+            let min_difference = f32::min(difference_x, difference_y);
+
+            let scale_factor = if min_difference < 2.0 {
+                2.0 - min_difference
+            } else {
+                1.0 / min_difference
+            };
 
             STANDARD_SCREEN_SIZE_COEFFICIENT * scale_factor
         } else {
