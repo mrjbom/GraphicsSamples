@@ -3,6 +3,7 @@ mod surface_data;
 use crate::SampleRequirements;
 use crate::graphics_context::surface_data::SurfaceData;
 use std::sync::Arc;
+use std::time::Instant;
 use wgpu::{
     Adapter, Backends, Device, DeviceDescriptor, Instance, InstanceDescriptor, PowerPreference,
     Queue, RequestAdapterOptions, TextureUsages,
@@ -20,6 +21,7 @@ pub struct GraphicsContext {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
     pub surface_data: SurfaceData,
+    pub last_frame_time: Instant,
 }
 
 impl GraphicsContext {
@@ -105,6 +107,7 @@ impl GraphicsContext {
             device,
             queue,
             surface_data,
+            last_frame_time: Instant::now(),
         })
     }
 

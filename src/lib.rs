@@ -1,11 +1,13 @@
 pub mod camera;
 pub mod graphics_context;
 
+use crate::camera::Camera;
 use crate::graphics_context::GraphicsContext;
+use std::time::{Duration, Instant};
 use wgpu::{DeviceDescriptor, SurfaceTexture, TextureView};
 use winit::application::ApplicationHandler;
-use winit::event::WindowEvent;
-use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
+use winit::event::{DeviceEvent, DeviceId, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow, DeviceEvents, EventLoop};
 use winit::window::WindowId;
 
 pub struct SampleApp<S: SampleTrait + Sized> {
@@ -14,12 +16,14 @@ pub struct SampleApp<S: SampleTrait + Sized> {
     event_loop: Option<EventLoop<()>>,
     graphics_context: Option<GraphicsContext>,
     sample_context: Option<S>,
+    mouse_in_window: bool,
 }
 
 impl<S: SampleTrait + Sized> SampleApp<S> {
     pub fn new(sample_name: &'static str, sample_requirements: SampleRequirements) -> Self {
         let event_loop = EventLoop::new().expect("Failed to create event loop");
         event_loop.set_control_flow(ControlFlow::Poll);
+        event_loop.listen_device_events(DeviceEvents::WhenFocused);
 
         Self {
             sample_name,
@@ -27,6 +31,7 @@ impl<S: SampleTrait + Sized> SampleApp<S> {
             event_loop: Some(event_loop),
             graphics_context: None,
             sample_context: None,
+            mouse_in_window: false,
         }
     }
 
@@ -83,11 +88,21 @@ impl<S: SampleTrait> ApplicationHandler for SampleApp<S> {
         match event {
             WindowEvent::RedrawRequested => {
                 let graphics_context = self.graphics_context.as_mut().unwrap();
+                let sample_context = self.sample_context.as_mut().unwrap();
+
+                let now = Instant::now();
+                let frame_time_delta = now - graphics_context.last_frame_time;
+                graphics_context.last_frame_time = now;
+
                 let (surface_texture, surface_texture_view) =
                     graphics_context.surface_data.acquire();
 
-                let sample_context = self.sample_context.as_mut().unwrap();
-                sample_context.render(graphics_context, surface_texture, surface_texture_view);
+                sample_context.render(
+                    graphics_context,
+                    surface_texture,
+                    surface_texture_view,
+                    frame_time_delta,
+                );
 
                 let graphics_context = self.graphics_context.as_ref().unwrap();
                 graphics_context.window.request_redraw();
@@ -95,12 +110,69 @@ impl<S: SampleTrait> ApplicationHandler for SampleApp<S> {
 
             WindowEvent::Resized(new_size) => {
                 let graphics_context = self.graphics_context.as_mut().unwrap();
+
                 graphics_context
                     .surface_data
                     .configure(new_size.width.max(1), new_size.height.max(1));
                 graphics_context.window.request_redraw();
             }
+
+            WindowEvent::KeyboardInput {
+                device_id: _,
+                event,
+                is_synthetic: _,
+            } => {
+                if let Some(sample_context) = self.sample_context.as_mut() {
+                    if let Some(camera) = sample_context.process_camera_input() {
+                        camera.process_keyboard(event.physical_key, event.state);
+                    }
+                }
+            }
+            WindowEvent::CursorEntered { device_id: _ } => {
+                self.mouse_in_window = true;
+            }
+
+            WindowEvent::CursorLeft { device_id: _ } => {
+                self.mouse_in_window = false;
+            }
+
+            WindowEvent::MouseInput {
+                device_id: _,
+                state,
+                button,
+            } => {
+                if self.mouse_in_window {
+                    if let Some(sample_context) = self.sample_context.as_mut() {
+                        if let Some(camera) = sample_context.process_camera_input() {
+                            camera.process_mouse_input(button, state);
+                        }
+                    }
+                }
+            }
+
             WindowEvent::CloseRequested => event_loop.exit(),
+            _ => {}
+        }
+    }
+
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
+        match event {
+            DeviceEvent::MouseMotion {
+                delta: (delta_x, delta_y),
+            } => {
+                if self.mouse_in_window {
+                    if let Some(sample_context) = self.sample_context.as_mut() {
+                        if let Some(camera) = sample_context.process_camera_input() {
+                            camera.process_mouse_motion(delta_x, delta_y);
+                        }
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -114,7 +186,12 @@ pub trait SampleTrait: Sized {
         graphics_context: &GraphicsContext,
         surface_texture: SurfaceTexture,
         surface_texture_view: TextureView,
+        frame_time_delta: Duration,
     );
+
+    fn process_camera_input(&mut self) -> Option<&mut Camera> {
+        None
+    }
 }
 
 #[derive(Default)]

@@ -4,6 +4,7 @@ use graphics_samples::graphics_context::GraphicsContext;
 use graphics_samples::{SampleApp, SampleRequirements, SampleTrait};
 use nalgebra::Matrix4;
 use std::borrow::Cow;
+use std::time::Duration;
 use wgpu::naga::ShaderStage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -42,7 +43,13 @@ struct SampleContext {
 
 impl SampleTrait for SampleContext {
     fn new(graphics_context: &GraphicsContext) -> anyhow::Result<Self> {
-        let camera = Camera::new([0.0, 0.0, -1.0], [0.0, 0.0, 1.0]);
+        let camera = Camera::new(
+            [0.0, 0.0, -1.0],
+            [0.0, 0.0, 1.0],
+            1.0,
+            1.0,
+            graphics_context.window.current_monitor(),
+        );
 
         // Shaders
         let vertex_shader = graphics_context
@@ -202,6 +209,7 @@ impl SampleTrait for SampleContext {
         graphics_context: &GraphicsContext,
         surface_texture: SurfaceTexture,
         surface_texture_view: TextureView,
+        frame_time_delta: Duration,
     ) {
         let mut command_encoder = graphics_context
             .device
@@ -229,13 +237,21 @@ impl SampleTrait for SampleContext {
             // Problems: Incorrect Z-axis direction
             // Incorrect depth clip space
             // OpenGL: [-1,1], wgpu: [0,1]
+            #[rustfmt::skip]
             let projection_correction = Matrix4::new(
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, -0.5, 0.5, 0.0, 0.0, -1.0, 0.0,
+                1.0, 0.0, 0.0, 0.0,
+                0.0, 1.0, 0.0, 0.0,
+                0.0, 0.0, -0.5, 0.5,
+                0.0, 0.0, -1.0, 0.0,
             );
-            let projection_matrix =
-                Matrix4::new_perspective(graphics_context.window_aspect(), 45.0, 0.1, 100.0);
+            let projection_matrix = Matrix4::new_perspective(
+                graphics_context.window_aspect(),
+                45.0_f32.to_radians(),
+                0.1,
+                100.0,
+            );
             let projection_matrix = projection_correction * projection_matrix;
-            let view_matrix = self.camera.calculate_view_matrix();
+            let view_matrix = self.camera.calculate_view_matrix(frame_time_delta);
             let model_matrix = Matrix4::<f32>::identity();
             let mvp_matrix = projection_matrix * view_matrix * model_matrix;
             render_pass.set_push_constants(
@@ -253,5 +269,9 @@ impl SampleTrait for SampleContext {
             .poll(Maintain::WaitForSubmissionIndex(submission_index));
         graphics_context.window.pre_present_notify();
         surface_texture.present();
+    }
+
+    fn process_camera_input(&mut self) -> Option<&mut Camera> {
+        Some(&mut self.camera)
     }
 }

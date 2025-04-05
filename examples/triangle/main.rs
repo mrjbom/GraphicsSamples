@@ -2,6 +2,7 @@ use bytemuck::{Pod, Zeroable};
 use graphics_samples::graphics_context::GraphicsContext;
 use graphics_samples::{SampleApp, SampleRequirements, SampleTrait};
 use std::borrow::Cow;
+use std::time::Duration;
 use wgpu::naga::ShaderStage;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -180,6 +181,7 @@ impl SampleTrait for SampleContext {
         graphics_context: &GraphicsContext,
         surface_texture: SurfaceTexture,
         surface_texture_view: TextureView,
+        _frame_time_delta: Duration,
     ) {
         let mut command_encoder = graphics_context
             .device

@@ -144,7 +144,9 @@ impl ApplicationHandler for App {
 
 struct GraphicsContext {
     window: Arc<Window>,
+    #[allow(unused)]
     instance: Instance,
+    #[allow(unused)]
     adapter: Adapter,
     device: Arc<Device>,
     queue: Arc<Queue>,
@@ -222,6 +224,7 @@ struct SurfaceData {
     window: Arc<Window>,
     surface: Surface<'static>,
     device: Arc<Device>,
+    #[allow(unused)]
     capabilities: SurfaceCapabilities,
     surface_configuration: SurfaceConfiguration,
     suboptimal: bool,
@@ -242,7 +245,7 @@ impl SurfaceData {
         let format = capabilities.formats[0];
 
         let present_mode = 'present_mode: {
-            let preferences = vec![PresentMode::FifoRelaxed, PresentMode::Fifo];
+            let preferences = [PresentMode::FifoRelaxed, PresentMode::Fifo];
             for preferred_present_mode in preferences.iter() {
                 if capabilities.present_modes.contains(preferred_present_mode) {
                     break 'present_mode *preferred_present_mode;
