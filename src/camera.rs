@@ -72,14 +72,11 @@ impl Camera {
 
             // Calculate monitor size coefficient
             let difference_x = current_monitor.size().width as f32 / STANDARD_SCREEN_SIZE.0 as f32;
-            let difference_y = current_monitor.size().height as f32 / STANDARD_SCREEN_SIZE.1 as f32;
 
-            let min_difference = f32::min(difference_x, difference_y);
-
-            let scale_factor = if min_difference < 2.0 {
-                2.0 - min_difference
+            let scale_factor = if difference_x < 2.0 {
+                2.0 - difference_x
             } else {
-                1.0 / min_difference
+                1.0 / difference_x
             };
 
             STANDARD_SCREEN_SIZE_COEFFICIENT * scale_factor
