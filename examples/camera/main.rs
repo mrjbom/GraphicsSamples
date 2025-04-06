@@ -233,9 +233,9 @@ impl SampleTrait for SampleContext {
             render_pass.set_pipeline(&self.render_pipeline);
 
             // Camera
-            // OpenGL projection matrix
-            // Problems: Incorrect Z-axis direction
-            // Incorrect depth clip space
+            // nalgebra creates a projection matrix for OpenGL, but it is not suitable for wgpu because:
+            // 1. Incorrect Z-axis direction
+            // 2. Incorrect depth clip space
             // OpenGL: [-1,1], wgpu: [0,1]
             #[rustfmt::skip]
             let projection_correction = Matrix4::new(
