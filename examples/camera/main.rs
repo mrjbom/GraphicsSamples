@@ -24,6 +24,7 @@ fn main() {
         device_descriptor: Some(DeviceDescriptor {
             required_features: Features::PUSH_CONSTANTS,
             required_limits: Limits {
+                // Matrix needs 64 bytes
                 max_push_constant_size: 64,
                 ..Default::default()
             },
