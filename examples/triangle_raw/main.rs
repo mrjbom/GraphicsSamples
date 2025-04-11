@@ -70,12 +70,7 @@ impl App {
             render_pass.draw(0..3, 0..1);
         }
         let command_buffer = command_encoder.finish();
-        let submission_index = queue.submit([command_buffer]);
-        let pool_result = device.poll(PollType::WaitForSubmissionIndex(submission_index));
-        if let Err(err) = pool_result {
-            log::error!("Failed to make device pool: {err}");
-            return;
-        }
+        queue.submit([command_buffer]);
         graphics_context.window.pre_present_notify();
         surface_texture.present();
     }
