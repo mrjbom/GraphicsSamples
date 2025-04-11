@@ -2,6 +2,7 @@ mod surface_data;
 
 use crate::SampleRequirements;
 use crate::graphics_context::surface_data::SurfaceData;
+use anyhow::Context;
 use std::sync::Arc;
 use std::time::Instant;
 use wgpu::{
@@ -46,7 +47,11 @@ impl GraphicsContext {
             window_attributes = window_attributes.with_position(window_position);
         }
 
-        let window = Arc::new(event_loop.create_window(window_attributes)?);
+        let window = Arc::new(
+            event_loop
+                .create_window(window_attributes)
+                .context("Failed to create window")?,
+        );
 
         // Instance
         let instance = Instance::new(&InstanceDescriptor {
@@ -55,7 +60,9 @@ impl GraphicsContext {
         });
 
         // Surface
-        let surface = instance.create_surface(window.clone())?;
+        let surface = instance
+            .create_surface(window.clone())
+            .context("Failed to create instance")?;
 
         // Adapter
         let adapter =
@@ -63,11 +70,9 @@ impl GraphicsContext {
                 power_preference: PowerPreference::HighPerformance,
                 force_fallback_adapter: false,
                 compatible_surface: Some(&surface),
-            }));
-        if adapter.is_none() {
-            anyhow::bail!("Failed to get adapter");
-        }
-        let adapter = adapter.unwrap();
+            }))
+            .context("Failed to get adapter")?;
+
         println!(
             "Selected adapter: {}, {}",
             adapter.get_info().name,
@@ -81,9 +86,9 @@ impl GraphicsContext {
                     .device_descriptor
                     .as_ref()
                     .unwrap_or(&DeviceDescriptor::default()),
-                None,
             ),
-        )?;
+        )
+        .context("Failed to request device")?;
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 

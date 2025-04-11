@@ -10,11 +10,10 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Buffer, BufferAddress, BufferUsages, Color, ColorTargetState, ColorWrites,
     CommandEncoderDescriptor, DeviceDescriptor, Features, FragmentState, FrontFace, Limits, LoadOp,
-    Maintain, Operations, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology,
-    PushConstantRange, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, StoreOp,
-    SurfaceTexture, TextureView, VertexAttribute, VertexBufferLayout, VertexFormat, VertexState,
-    VertexStepMode,
+    Operations, PipelineLayoutDescriptor, PrimitiveState, PrimitiveTopology, PushConstantRange,
+    RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, ShaderSource, ShaderStages, StoreOp, TextureView, VertexAttribute,
+    VertexBufferLayout, VertexFormat, VertexState, VertexStepMode,
 };
 
 fn main() {
@@ -208,7 +207,6 @@ impl SampleTrait for SampleContext {
     fn render(
         &mut self,
         graphics_context: &GraphicsContext,
-        surface_texture: SurfaceTexture,
         surface_texture_view: TextureView,
         frame_time_delta: Duration,
     ) {
@@ -264,12 +262,7 @@ impl SampleTrait for SampleContext {
             render_pass.draw(0..3, 0..1);
         }
         let command_buffer = command_encoder.finish();
-        let submission_index = graphics_context.queue.submit([command_buffer]);
-        graphics_context
-            .device
-            .poll(Maintain::WaitForSubmissionIndex(submission_index));
-        graphics_context.window.pre_present_notify();
-        surface_texture.present();
+        graphics_context.queue.submit([command_buffer]);
     }
 
     fn process_camera_input(&mut self) -> Option<&mut Camera> {

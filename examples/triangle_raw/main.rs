@@ -1,3 +1,4 @@
+use anyhow::Context;
 use bytemuck::{Pod, Zeroable};
 use std::borrow::Cow;
 use std::sync::Arc;
@@ -6,7 +7,7 @@ use wgpu::util::{BufferInitDescriptor, DeviceExt};
 use wgpu::{
     Adapter, Backends, Buffer, BufferAddress, BufferUsages, Color, ColorTargetState, ColorWrites,
     CommandEncoderDescriptor, CompositeAlphaMode, Device, DeviceDescriptor, FragmentState,
-    FrontFace, Instance, InstanceDescriptor, LoadOp, Maintain, MemoryHints, Operations,
+    FrontFace, Instance, InstanceDescriptor, LoadOp, MemoryHints, Operations, PollType,
     PowerPreference, PresentMode, PrimitiveState, PrimitiveTopology, Queue,
     RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor,
     RequestAdapterOptions, ShaderModule, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface,
@@ -70,7 +71,11 @@ impl App {
         }
         let command_buffer = command_encoder.finish();
         let submission_index = queue.submit([command_buffer]);
-        device.poll(Maintain::WaitForSubmissionIndex(submission_index));
+        let pool_result = device.poll(PollType::WaitForSubmissionIndex(submission_index));
+        if let Err(err) = pool_result {
+            log::error!("Failed to make device pool: {err}");
+            return;
+        }
         graphics_context.window.pre_present_notify();
         surface_texture.present();
     }
@@ -155,7 +160,11 @@ struct GraphicsContext {
 
 impl GraphicsContext {
     pub fn new(event_loop: &ActiveEventLoop) -> anyhow::Result<Self> {
-        let window = Arc::new(event_loop.create_window(Window::default_attributes())?);
+        let window = Arc::new(
+            event_loop
+                .create_window(Window::default_attributes())
+                .context("Failed to create window")?,
+        );
         window.set_min_inner_size(Some(LogicalSize::new(1, 1)));
 
         // Instance
@@ -165,7 +174,9 @@ impl GraphicsContext {
         });
 
         // Surface
-        let surface = instance.create_surface(window.clone())?;
+        let surface = instance
+            .create_surface(window.clone())
+            .context("Failed to create surface")?;
 
         // Adapter
         let adapter =
@@ -173,11 +184,8 @@ impl GraphicsContext {
                 power_preference: PowerPreference::HighPerformance,
                 force_fallback_adapter: false,
                 compatible_surface: Some(&surface),
-            }));
-        if adapter.is_none() {
-            anyhow::bail!("Failed to get adapter");
-        }
-        let adapter = adapter.unwrap();
+            }))
+            .context("Failed to request adapter")?;
         log::info!(
             "Selected adapter: {}, {}",
             adapter.get_info().name,
@@ -185,14 +193,13 @@ impl GraphicsContext {
         );
 
         // Device and Queue
-        let (device, queue) = futures::executor::block_on(adapter.request_device(
-            &DeviceDescriptor {
+        let (device, queue) =
+            futures::executor::block_on(adapter.request_device(&DeviceDescriptor {
                 label: None,
                 memory_hints: MemoryHints::MemoryUsage,
                 ..Default::default()
-            },
-            None,
-        ))?;
+            }))
+            .context("Failed to request device")?;
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
