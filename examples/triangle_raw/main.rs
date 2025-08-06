@@ -123,7 +123,7 @@ impl ApplicationHandler for App {
                 let graphics_context = self.graphics_context.as_mut().unwrap();
                 graphics_context
                     .surface_data
-                    .configure(new_size.width.max(1), new_size.height.max(1));
+                    .configure(new_size.width, new_size.height);
                 graphics_context.window.request_redraw();
             }
             WindowEvent::CloseRequested => event_loop.exit(),
@@ -195,10 +195,7 @@ impl GraphicsContext {
             device.clone(),
             TextureUsages::RENDER_ATTACHMENT,
         );
-        surface_data.configure(
-            window.inner_size().width.max(1),
-            window.inner_size().height.max(1),
-        );
+        surface_data.configure(window.inner_size().width, window.inner_size().height);
 
         window.request_redraw();
         Ok(GraphicsContext {
@@ -277,8 +274,8 @@ impl SurfaceData {
     }
 
     pub fn configure(&mut self, width: u32, height: u32) {
-        self.surface_configuration.width = width;
-        self.surface_configuration.height = height;
+        self.surface_configuration.width = width.max(1);
+        self.surface_configuration.height = height.max(1);
 
         self.surface
             .configure(&self.device, &self.surface_configuration);
@@ -287,8 +284,8 @@ impl SurfaceData {
     pub fn acquire(&mut self) -> (SurfaceTexture, TextureView) {
         if self.suboptimal {
             self.configure(
-                self.window.inner_size().width.max(1),
-                self.window.inner_size().height.max(1),
+                self.window.inner_size().width,
+                self.window.inner_size().height,
             );
         }
         self.suboptimal = false;
@@ -308,7 +305,7 @@ impl SurfaceData {
                 // If OutOfMemory happens, reconfiguring may not help, but we might as well try
                 | SurfaceError::OutOfMemory,
             ) => {
-                self.configure(self.window.inner_size().width.max(1), self.window.inner_size().height.max(1));
+                self.configure(self.window.inner_size().width, self.window.inner_size().height);
                 self.surface
                     .get_current_texture()
                     .expect("Failed to acquire next surface texture")

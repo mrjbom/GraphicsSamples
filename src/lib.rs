@@ -116,7 +116,7 @@ impl<S: SampleTrait> ApplicationHandler for SampleApp<S> {
 
                 graphics_context
                     .surface_data
-                    .configure(new_size.width.max(1), new_size.height.max(1));
+                    .configure(new_size.width, new_size.height);
                 graphics_context.window.request_redraw();
             }
 

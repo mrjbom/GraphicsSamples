@@ -71,8 +71,8 @@ impl SurfaceData {
     }
 
     pub fn configure(&mut self, width: u32, height: u32) {
-        self.surface_configuration.width = width;
-        self.surface_configuration.height = height;
+        self.surface_configuration.width = width.max(1);
+        self.surface_configuration.height = height.max(1);
 
         self.surface
             .configure(&self.device, &self.surface_configuration);
@@ -81,8 +81,8 @@ impl SurfaceData {
     pub fn acquire(&mut self) -> (SurfaceTexture, TextureView) {
         if self.suboptimal {
             self.configure(
-                self.window.inner_size().width.max(1),
-                self.window.inner_size().height.max(1),
+                self.window.inner_size().width,
+                self.window.inner_size().height,
             );
         }
         self.suboptimal = false;
@@ -102,7 +102,7 @@ impl SurfaceData {
                 // If OutOfMemory happens, reconfiguring may not help, but we might as well try
                 | SurfaceError::OutOfMemory,
             ) => {
-                self.configure(self.window.inner_size().width.max(1), self.window.inner_size().height.max(1));
+                self.configure(self.window.inner_size().width, self.window.inner_size().height);
                 self.surface
                     .get_current_texture()
                     .expect("Failed to acquire next surface texture")

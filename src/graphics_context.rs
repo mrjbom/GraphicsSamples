@@ -99,10 +99,7 @@ impl GraphicsContext {
             device.clone(),
             TextureUsages::RENDER_ATTACHMENT,
         );
-        surface_data.configure(
-            window.inner_size().width.max(1),
-            window.inner_size().height.max(1),
-        );
+        surface_data.configure(window.inner_size().width, window.inner_size().height);
 
         window.request_redraw();
         Ok(GraphicsContext {
