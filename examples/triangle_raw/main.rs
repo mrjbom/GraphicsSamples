@@ -38,18 +38,15 @@ struct App {
 }
 
 impl App {
-    pub fn render(
-        &mut self,
-        device: &Device,
-        queue: &Queue,
-        surface_texture: SurfaceTexture,
-        surface_texture_view: TextureView,
-    ) {
+    pub fn render(&mut self) {
         let graphics_context = self.graphics_context.as_mut().unwrap();
         let app_context = self.app_context.as_mut().unwrap();
 
-        let mut command_encoder =
-            device.create_command_encoder(&CommandEncoderDescriptor::default());
+        let (surface_texture, surface_texture_view) = graphics_context.surface_data.acquire();
+
+        let mut command_encoder = graphics_context
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor::default());
         {
             let mut render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
                 label: None,
@@ -70,9 +67,10 @@ impl App {
             render_pass.draw(0..3, 0..1);
         }
         let command_buffer = command_encoder.finish();
-        queue.submit([command_buffer]);
+        graphics_context.queue.submit([command_buffer]);
         graphics_context.window.pre_present_notify();
         surface_texture.present();
+        graphics_context.window.request_redraw();
     }
 }
 
@@ -118,15 +116,7 @@ impl ApplicationHandler for App {
 
         match event {
             WindowEvent::RedrawRequested => {
-                let graphics_context = self.graphics_context.as_mut().unwrap();
-                let device = graphics_context.device.clone();
-                let queue = graphics_context.queue.clone();
-                let (surface_texture, surface_texture_view) =
-                    graphics_context.surface_data.acquire();
-
-                self.render(&device, &queue, surface_texture, surface_texture_view);
-                let graphics_context = self.graphics_context.as_ref().unwrap();
-                graphics_context.window.request_redraw();
+                self.render();
             }
 
             WindowEvent::Resized(new_size) => {
